@@ -62,7 +62,8 @@ export function Garden() {
   useEffect(() => {
     const root = rootRef.current;
     const track = trackRef.current;
-    if (!root || !track) return;
+    const scroller = scrollerRef.current;
+    if (!root || !track || !scroller) return;
 
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
@@ -91,7 +92,8 @@ export function Garden() {
         if (block) {
           block.style.transform =
             `translateY(${(-near * 8).toFixed(1)}px) ` +
-            `scale(${(1 + near * 0.9).toFixed(3)}) ` +
+            // 0.5 is the resting size: the block is laid out at double scale.
+            `scale(${((1 + near * 0.9) * 0.5).toFixed(3)}) ` +
             `rotateX(${tip.toFixed(1)}deg) rotateY(${turn.toFixed(1)}deg) ` +
             `rotateZ(${(section.lean * near).toFixed(1)}deg)`;
         }
@@ -161,9 +163,24 @@ export function Garden() {
       target.y = (e.clientY - page.top) / page.height;
       target.on = 1;
     };
+    // When the line is wider than the screen there is no pointer to follow,
+    // so scrolling stands in for it: the start of the scroll lights the first
+    // section, the end lights the last, and the rest follow in between.
+    let overflowing = false;
+    const followScroll = () => {
+      const hidden = scroller.scrollWidth - scroller.clientWidth;
+      overflowing = hidden > 1;
+      if (!overflowing || pointerInside || focused) return;
+      target.x = frac(0) + (frac(COUNT - 1) - frac(0)) * (scroller.scrollLeft / hidden);
+      target.y = 0.44;
+      target.on = 1;
+    };
+
     const onPointerLeave = () => {
       pointerInside = false;
-      if (!focused) target.on = 0;
+      if (focused) return;
+      if (overflowing) followScroll();
+      else target.on = 0;
     };
 
     // Keyboard: focusing a section behaves like hovering it.
@@ -177,13 +194,16 @@ export function Garden() {
     };
     const onFocusOut = () => {
       focused = false;
-      if (!pointerInside) target.on = 0;
+      if (pointerInside) return;
+      if (overflowing) followScroll();
+      else target.on = 0;
     };
 
     // Phones: tilting the device stands in for the pointer.
     const onTilt = (e: DeviceOrientationEvent) => {
       if (e.gamma == null || pointerInside || focused) return;
-      target.x = clamp(0.5 + e.gamma / 60, 0, 1);
+      // While scrolling picks the section, tilt only tips the blocks.
+      if (!overflowing) target.x = clamp(0.5 + e.gamma / 60, 0, 1);
       target.y = clamp(0.5 + ((e.beta ?? 45) - 45) / 70, 0, 1);
       target.on = 1;
     };
@@ -203,6 +223,13 @@ export function Garden() {
     track.addEventListener("focusout", onFocusOut);
     root.addEventListener("pointerdown", askForTilt, { once: true });
     window.addEventListener("deviceorientation", onTilt);
+    scroller.addEventListener("scroll", followScroll, { passive: true });
+    const resizeObserver = new ResizeObserver(() => {
+      followScroll();
+      if (!overflowing && !pointerInside && !focused) target.on = 0;
+    });
+    resizeObserver.observe(scroller);
+    followScroll();
     frame = requestAnimationFrame(tick);
 
     return () => {
@@ -213,6 +240,8 @@ export function Garden() {
       track.removeEventListener("focusout", onFocusOut);
       root.removeEventListener("pointerdown", askForTilt);
       window.removeEventListener("deviceorientation", onTilt);
+      scroller.removeEventListener("scroll", followScroll);
+      resizeObserver.disconnect();
     };
   }, []);
 
@@ -286,7 +315,7 @@ export function Garden() {
                     className={styles.block}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={section.print.src} alt="" width={64} height={64} />
+                    <img src={section.print.src} alt="" width={128} height={128} />
                   </span>
                 </span>
               </span>

@@ -152,30 +152,35 @@
 }
 
 .perspective {
+  position: relative;
   display: block;
   width: 64px;
   height: 64px;
   perspective: 520px;
 }
 
+/* Laid out at twice its resting size and scaled down, so the print stays
+   sharp when it grows: 3D layers are drawn once at their layout size. */
 .block {
-  position: relative;
+  position: absolute;
+  left: -32px;
+  bottom: 0;
   display: block;
-  width: 64px;
-  height: 64px;
+  width: 128px;
+  height: 128px;
+  transform: scale(0.5);
   transform-style: preserve-3d;
   transform-origin: 50% 100%;
-  will-change: transform;
 }
 
 .block img {
   display: block;
-  width: 64px;
-  height: 64px;
+  width: 128px;
+  height: 128px;
   object-fit: cover;
   box-shadow:
-    0 1px 0 rgba(27, 26, 23, 0.3),
-    0 8px 14px rgba(60, 50, 30, 0.28);
+    0 2px 0 rgba(27, 26, 23, 0.3),
+    0 16px 28px rgba(60, 50, 30, 0.28);
 }
 
 .label {
