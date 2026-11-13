@@ -208,6 +208,57 @@
   outline-offset: 5px;
 }
 
+/* Shown only when the line runs off screen: points to the side with more to see. */
+.more {
+  position: absolute;
+  /* Above the blocks, clear of the labels and the text wheel below the line. */
+  top: calc(50% - 150px);
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  cursor: pointer;
+  animation: breathe 3.6s ease-in-out infinite;
+}
+
+.more[data-side="left"] {
+  right: auto;
+  left: 12px;
+}
+
+.more[data-side="left"] svg {
+  transform: scaleX(-1);
+}
+
+.more path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.more:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 0.85;
+  }
+}
+
 .credit {
   position: absolute;
   right: 20px;
@@ -221,5 +272,10 @@
 @media (prefers-reduced-motion: reduce) {
   .wheel {
     animation: none;
+  }
+
+  .more {
+    animation: none;
+    opacity: 0.6;
   }
 }

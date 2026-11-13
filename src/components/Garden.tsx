@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { sections, site } from "@/content/sections";
 import { Grain } from "./Grain";
 import styles from "./Garden.module.css";
@@ -27,6 +27,37 @@ export function Garden() {
   const blockRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const blurWrapRefs = useRef<(HTMLSpanElement | null)[]>([]);
   const descRefs = useRef<(HTMLSpanElement | null)[]>([]);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  // Which way the line continues off screen, or null when it all fits.
+  const [more, setMore] = useState<"left" | "right" | null>(null);
+
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller) return;
+    const update = () => {
+      const hidden = scroller.scrollWidth - scroller.clientWidth;
+      if (hidden <= 1) return setMore(null);
+      // Point toward whichever side has more of the line left to see.
+      setMore(scroller.scrollLeft < hidden / 2 ? "right" : "left");
+    };
+    update();
+    scroller.addEventListener("scroll", update, { passive: true });
+    const observer = new ResizeObserver(update);
+    observer.observe(scroller);
+    return () => {
+      scroller.removeEventListener("scroll", update);
+      observer.disconnect();
+    };
+  }, []);
+
+  const scrollLine = () => {
+    const scroller = scrollerRef.current;
+    if (!scroller || !more) return;
+    scroller.scrollBy({
+      left: scroller.clientWidth * 0.7 * (more === "right" ? 1 : -1),
+      behavior: "smooth",
+    });
+  };
 
   useEffect(() => {
     const root = rootRef.current;
@@ -219,7 +250,7 @@ export function Garden() {
         </text>
       </svg>
 
-      <div className={styles.scroller}>
+      <div ref={scrollerRef} className={styles.scroller}>
         <nav ref={trackRef} aria-label="Sections" className={styles.track}>
           <div ref={blobRef} aria-hidden="true" className={styles.blob} />
           <svg
@@ -272,6 +303,20 @@ export function Garden() {
           ))}
         </nav>
       </div>
+
+      {more && (
+        <button
+          type="button"
+          className={styles.more}
+          data-side={more}
+          onClick={scrollLine}
+          aria-label={`Scroll the line ${more}`}
+        >
+          <svg aria-hidden="true" viewBox="0 0 44 16" width="44" height="16">
+            <path d="M1 8 H42 M35 1.5 L42 8 L35 14.5" />
+          </svg>
+        </button>
+      )}
 
       <a className={styles.credit} href={site.imageSource.href}>
         {site.imageSource.label}
