@@ -82,8 +82,11 @@
   left: 0;
   right: 0;
   top: 50%;
-  height: 400px;
-  margin-top: -200px;
+  /* A scrolling box also clips vertically, so it extends 120px above the
+     track to leave an enlarged block room to grow without being cut off. */
+  height: 520px;
+  margin-top: -320px;
+  padding-top: 120px;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
